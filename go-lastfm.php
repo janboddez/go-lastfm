@@ -94,7 +94,7 @@ class GO_Lastfm {
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 		add_action( 'widgets_init', array( $this, 'load_widget' ) );
 		add_action( 'daily_load_album_list', array( $this, 'load_album_list' ) );
-		add_action( 'admin_menu', array( $this, 'go_lastfm_create_menu' ) );
+		add_action( 'admin_menu', array( $this, 'create_menu' ) );
 	}
 
 	/**
@@ -152,18 +152,18 @@ class GO_Lastfm {
 	/**
 	 * Registers the plugin settings page
 	 */
-	public function go_lastfm_create_menu() {
+	public function create_menu() {
 		add_options_page(
 			'GO Last.fm', 
 			'GO Last.fm', 
 			'manage_options', 
 			'go-lastfm-settings', 
-			array( $this, 'go_lastfm_settings_page' )
+			array( $this, 'settings_page' )
 		);
-		add_action( 'admin_init', array( $this, 'go_lastfm_register_settings' ) );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
 	}
 
-	public function go_lastfm_register_settings() {
+	public function register_settings() {
 		register_setting( 'go-lastfm-settings-group', 'go_lastfm_api_key' );
 		register_setting( 'go-lastfm-settings-group', 'go_lastfm_user_name' );
 	}
@@ -171,7 +171,7 @@ class GO_Lastfm {
 	/**
 	 * Renders the plugin settings form
 	 */
-	public function go_lastfm_settings_page() {
+	public function settings_page() {
 	?>
 	<div class="wrap">
 	<h1>GO Last.fm</h1>
