@@ -7,7 +7,10 @@
  * Author: Jan Boddez
  * Author URI: https://janboddez.be/
  */
-
+ 
+/**
+ * Everything related to the widget
+ */
 class GO_Lastfm_Widget extends WP_Widget {
 	/**
 	 * Constructor for the cover art widget
@@ -19,13 +22,16 @@ class GO_Lastfm_Widget extends WP_Widget {
 			array( 'description' => __( 'Display the (album) cover art to the tracks you most recently listened to.', 'go_lastfm' ) )
 		);
 
+		/**
+		 * Load some basic styles; may or may not suffice for your website
+		 */
 		if ( is_active_widget( false, false, $this->id_base, true ) ) {
 			wp_enqueue_style( 'go-lastfm', plugins_url( 'go-lastfm/go-lastfm.css' ) );
 		}
 	}
 
 	/**
-	 * Renders the actual widget
+	 * Render the actual widget
 	 */
 	public function widget( $args, $instance ) {
 		$title = apply_filters( 'widget_title', $instance['title'] );
@@ -37,13 +43,13 @@ class GO_Lastfm_Widget extends WP_Widget {
 		}
 
 		/**
-		 * Retrieves the album list stored previously
+		 * Retrieve the album list stored previously
 		 */
-		$albums = get_option( 'go_lastfm_recent_albums' );
+		$albums = get_option( 'go_lastfm_recent_albums' ); // Returns an array (!), or false
 
 		if ( ! empty( $albums ) && is_array( $albums ) ) {
 			/**
-			 * Loops through the list and displays the cover art and links to Last.fm
+			 * Loop through the list and outputs the cover art and links to Last.fm
 			 */
 			?>
 			<div class="go-recent-albums">
@@ -61,11 +67,12 @@ class GO_Lastfm_Widget extends WP_Widget {
 			</div>
 			<?php
 		}
+
 		echo $args['after_widget'];
 	}
 
 	/**
-	 * 'Create Widget' form; allows for a custom widget title
+	 * Fairly generic 'Create Widget' form; allows for a custom widget title
 	 */
 	public function form( $instance ) {
 		if ( isset( $instance[ 'title' ] ) ) {
@@ -106,78 +113,140 @@ class GO_Lastfm {
 	}
 
 	/**
-	 * Schedules updating the album list
+	 * Schedule updating the album list
 	 */
 	public function activate() {
 		$timestamp = wp_next_scheduled( 'daily_load_album_list' );
 
 		if ( false === $timestamp ) {
+			/**
+			 * Note that this'll try to run '$this->load_album_list' even before the Last.fm API settings were entered
+			 * To do: create a nicer solution, like schedule the cron job whenever the settings are modified
+			 */
 			wp_schedule_event( time(), 'daily', 'daily_load_album_list' );
 		}
 	}
 
+	/**
+	 * Clear update schedule upon plugin deactivation
+	 */
 	public function deactivate() {
 		wp_clear_scheduled_hook( 'daily_load_album_list' );
 	}
+
 	/**
-	 * Actually registers the widget defined above
+	 * Actually register the widget defined earlier
 	 */
 	public function load_widget() {
 		register_widget( 'GO_Lastfm_Widget' );
 	}
 
 	/**
-	 * Updates the album list by calling the Last.fm API
+	 * Update the album list by calling the Last.fm API
 	 */
 	public function load_album_list() {
+		/**
+		 * Get Last.fm API settings
+		 */
 		$lastfm_api_key = get_option( 'go_lastfm_api_key' );
 		$lastfm_user_name = get_option( 'go_lastfm_user_name' );
 
 		$albums = array();
 
+		/**
+		 * Try retrieving the most recent track list, hiding/ignoring any errors that may pop up
+		 */
 		$response = @file_get_contents( 'http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=' . $lastfm_user_name . '&limit=200&api_key=' . $lastfm_api_key . '&format=json' );
 		$json = @json_decode( $response, true ); // Returns an associative array
 
+		/**
+		 * Check if that worked
+		 */
 		if ( is_array( $json['recenttracks']['track'] ) ) {
+			/**
+			 * We've somehow got back an array, so something must've gone right
+			 */
 			foreach ( $json['recenttracks']['track'] as $track ) {
 				$title = /* $track['artist']['#text'] . ' - ' . */ trim( $track['album']['#text'] );
-				$thumbnail = $track['image'][2]['#text']; // Album cover URI
-				$mbid = $track['album']['mbid'];
+				$thumbnail = $track['image'][2]['#text']; // Album cover URL; may return an empty string
+				$mbid = $track['album']['mbid']; // MusicBrainz album ID; may return an empty string
 
-				// if ( ! $this->in_album_list( $thumbnail, $albums ) ) { // Won't work for compilation albums, as thumbnails aren't unique
-				if ( ! $this->in_album_list( $title, $albums ) ) {
+				// if ( ! $this->in_album_list( $thumbnail, $albums ) ) { // Won't work for compilation albums, as thumbnails aren't unique!
+				if ( ! $this->in_album_list( $title, $albums ) ) { // Will lead to some skipping in case of identically named albums by different artists, but hey
 					$uri = '';
 
 					if ( ! empty( $mbid ) ) {
+						/**
+						 * MusicBrainz album ID known: now try and get the Last.fm URL for this album
+						 */
 						$response = @file_get_contents( 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&mbid=' . $mbid . '&api_key=' . $lastfm_api_key . '&format=json' );
 						$json = @json_decode( $response, true ); // Returns an associative array
 
-						if ( ! empty( $json['album']['url'] ) /* && filter_var( $json['album']['url'], FILTER_VALIDATE_URL ) */ ) {
-							$uri = esc_url_raw( $json['album']['url'] );
+						if ( ! empty( $json['album']['url'] ) && filter_var( $json['album']['url'], FILTER_VALIDATE_URL ) ) {
+							/**
+							 * Valid URLs only, please
+							 */
+							$uri = $json['album']['url'];
 						}
+					} else {
+						/**
+						 * MusicBrainz album ID unknown: let's see if we can somehow try for a compilation album (this sometimes works)
+						 */
+						$response = @file_get_contents( 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&artist=Various+Artists&album=' . urlencode( $title ) . '&api_key=' . $lastfm_api_key . '&format=json' );
+						$json = @json_decode( $response, true ); // Returns an associative array
+
+						if ( ! empty( $json['album']['url'] ) && filter_var( $json['album']['url'], FILTER_VALIDATE_URL ) ) {
+							/**
+							 * We've somehow got back a valid URL, so let's store that
+							 */
+							$uri = $json['album']['url'];
+						}
+
+						if ( ! filter_var( $thumbnail, FILTER_VALIDATE_URL ) ) {
+							/**
+							 * Our previous query did not return a (valid) image URL for the track/album cover...
+							 */
+							if ( ! empty( $json['album']['image'][2]['#text'] ) && filter_var( $json['album']['image'][2]['#text'], FILTER_VALIDATE_URL ) ) {
+								/**
+								 * ...but maybe this one did? If so, let's store it 
+								 */
+								$thumbnail = $json['album']['image'][2]['#text'];
+							}
+						}
+					}
+
+					if ( ! filter_var( $thumbnail, FILTER_VALIDATE_URL ) ) {
+						/**
+						 * Still haven't found that image after all, skip this track (if there's nothing to display...)
+						 */
+						continue; // To the next item in the 'foreach' loop
 					}
 
 					$albums[] = array(
 						'title' => $title,
-						'uri' => $uri,
+						'uri' => $uri, // Note that this could still be an empty string! That's okay, though
 						'thumbnail' => $thumbnail,
 					);
 				}
 
-				// Limits the album list to 8
+				/**
+				 * Limit the album count to 8
+				 * To do: make this a plugin setting
+				 */
 				if ( count( $albums ) >= 8 ) {
-					break;
+					break; // Break out of the 'foreach' loop entirely
 				}
 			}
+
 			/**
-			 * Stores the (updated) album list as a WordPress 'option'
+			 * Pfew! Store the (updated) album list in the WordPress database
 			 */
 			update_option( 'go_lastfm_recent_albums', $albums ); // Accepts arrays, will add option if non-existent
 		}
 	}
 
 	/**
-	 * Registers the plugin settings page
+	 * Register the plugin settings page
 	 */
 	public function create_menu() {
 		add_options_page( 'GO Last.fm', 'GO Last.fm', 'manage_options', 'go-lastfm-settings', array( $this, 'settings_page' ) );
@@ -190,7 +259,7 @@ class GO_Lastfm {
 	}
 
 	/**
-	 * Renders the plugin settings form
+	 * Render the plugin settings form
 	 */
 	public function settings_page() {
 	?>
