@@ -1,19 +1,19 @@
-.go-recent-albums ul {
+.widget .go-recent-albums ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
 }
-.go-recent-albums li {
+.widget .go-recent-albums > ul li {
+  border: 0;
   margin: 0;
   padding: 0;
   width: 25%;
 }
-.go-recent-albums a {
+.widget .go-recent-albums a {
   background-image: none !important;
 }
-.go-recent-albums a img {
+.widget .go-recent-albums img {
   display: block;
 }
