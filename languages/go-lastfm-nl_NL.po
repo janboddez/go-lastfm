@@ -1,0 +1,38 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2017-10-08 13:33+0200\n"
+"PO-Revision-Date: 2017-10-08 13:33+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.7.1\n"
+"X-Poedit-Basepath: ..\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-SearchPath-0: languages\n"
+"X-Poedit-SearchPath-1: .\n"
+
+#: go-lastfm.php:23 go-lastfm.php:86 go-lastfm.php:277 go-lastfm.php:278
+#: go-lastfm.php:298
+msgid "Last.fm"
+msgstr "Last.fm"
+
+#: go-lastfm.php:24
+msgid "Display the cover art to the tracks you most recently listened to."
+msgstr "Artwork weergeven van de nummers waar je recent naar hebt geluisterd."
+
+#: go-lastfm.php:90
+msgid "Title:"
+msgstr "Titel:"
+
+#: go-lastfm.php:304
+msgid "Last.fm API Key"
+msgstr "Last.fm-API-sleutel"
+
+#: go-lastfm.php:308
+msgid "Last.fm User Name"
+msgstr "Last.fm-gebruikersnaam"

@@ -115,6 +115,14 @@ class GO_Lastfm {
 		add_action( 'admin_menu', array( $this, 'create_menu' ) );
 		add_action( 'widgets_init', array( $this, 'load_widget' ) );
 		add_action( 'daily_load_album_list', array( $this, 'load_album_list' ) );
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+	}
+
+	/**
+	 * Load plugin textdomain
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain( 'go-lastfm', false, basename( dirname( __FILE__ ) ) . '/languages' );
 	}
 
 	/**
@@ -208,7 +216,8 @@ class GO_Lastfm {
 					} else {
 						/*
 						 * MusicBrainz album ID unknown: let's see if we can
-						 * somehow try for a compilation album (this sometimes works)
+						 * somehow try for a compilation album (this sometimes
+						 * works)
 						 */
 						$response = @file_get_contents( 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&artist=Various+Artists&album=' . urlencode( $title ) . '&api_key=' . $lastfm_api_key . '&format=json' );
 						$json = @json_decode( $response, true ); // Returns an associative array
