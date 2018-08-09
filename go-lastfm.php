@@ -1,7 +1,8 @@
 <?php
 /**
  * Plugin Name: GO Last.fm
- * Plugin URI: https://janboddez.be/
+ * Plugin URI: https://github.com/janboddez/go-lastfm
+ * GitHub Plugin URI: https://github.com/janboddez/go-lastfm
  * Description: Display the cover art to the tracks you most recently listened to. 
  * Version: 0.2.1
  * Author: Jan Boddez
